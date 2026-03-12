@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAVE 3.0 | Admin Panel</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom Styles (Reusing existing) -->
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+        body {
+            overflow: auto !important;
+            height: auto !important;
+        }
+
+        .admin-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .admin-card {
+            padding: 30px;
+            margin-bottom: 24px;
+            border-radius: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="light"] .form-control {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: var(--text-primary);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .btn-update {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: 'Space Grotesk', sans-serif;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+        }
+
+        .btn-update:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+        }
+
+        .btn-update:active {
+            transform: translateY(1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            color: var(--text-primary);
+        }
+
+        [data-theme="light"] .btn-secondary {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        #notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: var(--success);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: translateX(150%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #notification.show {
+            transform: translateX(0);
+        }
+
+        #notification i {
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Admin Auth Overlay -->
+    <div id="authOverlay" class="admin-auth-overlay">
+        <div class="admin-auth-card">
+            <h2><i class="fa-solid fa-lock" style="margin-right: 10px; color: var(--accent-1);"></i>Admin Access</h2>
+            <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.9rem;">Please enter the designated
+                password to access the admin panel.</p>
+            <input type="password" id="adminPassword" class="form-control" placeholder="Enter Password"
+                autocomplete="off">
+            <button type="button" id="loginBtn" class="btn-primary" style="width: 100%;">Unlock Dashboard</button>
+            <p id="authError" style="color: var(--error); margin-top: 15px; font-size: 0.85rem; display: none;">
+                Incorrect password. Access denied.</p>
+        </div>
+    </div>
+
+    <!-- Ambient Background Effects -->
+    <div class="ambient-bg ambient-1"></div>
+    <div class="ambient-bg ambient-2"></div>
+    <div class="ambient-bg ambient-3"></div>
+
+    <div id="notification"><i class="fa-solid fa-check-circle"></i> <span>Dashboard Updated Successfully</span></div>
+
+    <div class="admin-container">
+        <!-- Top Header Bar -->
+        <header class="top-bar glass-panel"
+            style="margin-bottom: 30px; border-radius: 16px; justify-content: space-between;">
+            <div class="page-title">
+                <h1>Admin Panel</h1>
+                <p>Live Data Update Interface</p>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn glass-panel" id="theme-toggle" title="Toggle Theme"><i
+                        class="fa-solid fa-sun"></i></button>
+                <a href="index.html" target="_blank" class="btn-primary"
+                    style="text-decoration: none; padding: 10px 20px;"><i class="fa-solid fa-external-link-alt"
+                        style="margin-right: 8px;"></i> View Live Dashboard</a>
+            </div>
+        </header>
+
+        <form id="adminForm">
+            <!-- KPI Section Removed -->
+
+            <!-- Live Telemetry Section -->
+            <section class="admin-card glass-panel">
+                <div class="section-header">
+                    <h2>Live Telemetry & Metrics</h2>
+                </div>
+                <div class="admin-grid">
+                    <div class="form-group">
+                        <label for="telemetryCheckedIn"><i class="fa-solid fa-clipboard-user"
+                                style="margin-right: 8px; color: var(--chart-1);"></i> Checked-In Students</label>
+                        <input type="number" id="telemetryCheckedIn" class="form-control" placeholder="e.g. 145">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telemetryReviews"><i class="fa-solid fa-list-check"
+                                style="margin-right: 8px; color: var(--chart-5);"></i> Judge Reviews Completed</label>
+                        <input type="number" id="telemetryReviews" class="form-control" placeholder="e.g. 98">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Event Progress Tracker -->
+            <section class="admin-card glass-panel">
+                <div class="section-header">
+                    <h2>Event Progress Tracker</h2>
+                </div>
+                <div class="form-group">
+                    <label for="eventStage">Active Stage</label>
+                    <select id="eventStage" class="form-control"
+                        style="appearance: none; background-color: rgba(15, 23, 42, 0.6);">
+                        <option value="1">1 - Inauguration Only</option>
+                        <option value="1.5">1.5 - Inauguration & Hackathon Overlapping</option>
+                        <option value="2">2 - Hackathon Only</option>
+                        <option value="2.5">2.5 - Hackathon & Evaluation Overlapping</option>
+                        <option value="3">3 - Evaluation Only</option>
+                        <option value="3.5">3.5 - Evaluation & Valedictory Overlapping</option>
+                        <option value="4">4 - Valedictory Only</option>
+                        <option value="5">5 - Event Completed</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="liveTimer"><i class="fa-regular fa-clock" style="margin-right: 8px;"></i> Manual Live
+                        Time (HH:MM:SS)</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="liveTimer" class="form-control" placeholder="e.g. 23:59:59"
+                            style="flex: 1;">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" id="btnTimerStart" class="btn-primary"
+                            style="flex: 1; min-width: 0; padding: 8px; font-size: 0.85rem;"><i class="fa-solid fa-play"
+                                style="margin-right: 6px;"></i>Start</button>
+                        <button type="button" id="btnTimerPause" class="btn-primary"
+                            style="flex: 1; min-width: 0; padding: 8px; font-size: 0.85rem; background: var(--card-inner-bg); color: var(--text-primary);"><i
+                                class="fa-solid fa-pause" style="margin-right: 6px;"></i>Pause</button>
+                        <button type="button" id="btnTimerReset" class="btn-primary"
+                            style="flex: 1; min-width: 0; padding: 8px; font-size: 0.85rem; background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.3);"><i
+                                class="fa-solid fa-rotate-left" style="margin-right: 6px;"></i>Reset</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Announcements Section -->
+            <section class="admin-card glass-panel">
+                <div class="section-header">
+                    <h2>Live Announcements</h2>
+                </div>
+                <div class="form-group">
+                    <label
+                        style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-primary); font-size: 1.1rem; margin-bottom: 15px;">
+                        <input type="checkbox" id="showAnnouncement" style="width: 20px; height: 20px;">
+                        Show Announcement Popup
+                    </label>
+                </div>
+                <div class="form-group">
+                    <textarea id="announcementMessage" class="form-control"
+                        style="height: 100px; font-size: 0.95rem; line-height: 1.5;" spellcheck="true"
+                        placeholder="Enter announcement text to display on the dashboard..."></textarea>
+                </div>
+            </section>
+
+
+
+            <!-- Final Protocol (Winners) -->
+            <section class="admin-card glass-panel">
+                <div class="section-header">
+                    <h2>Final Protocol (Winners)</h2>
+                </div>
+                <div class="form-group">
+                    <label
+                        style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-primary); font-size: 1.1rem;">
+                        <input type="checkbox" id="resultsUnlocked" style="width: 20px; height: 20px;">
+                        Unlock Results on Dashboard
+                    </label>
+                </div>
+                <div class="admin-grid" style="margin-top: 20px">
+                    <div class="form-group">
+                        <label for="winnerChampion"><i class="fa-solid fa-crown" style="color: gold;"></i>
+                            Champion</label>
+                        <input type="text" id="winnerChampion" class="form-control" placeholder="Team Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="winnerRunnerUp"><i class="fa-solid fa-medal" style="color: silver;"></i> Runner
+                            Up</label>
+                        <input type="text" id="winnerRunnerUp" class="form-control" placeholder="Team Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="winnerThird"><i class="fa-solid fa-award" style="color: #cd7f32;"></i> Third
+                            Place</label>
+                        <input type="text" id="winnerThird" class="form-control" placeholder="Team Name">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Leaderboard Data -->
+            <section class="admin-card glass-panel">
+                <div class="section-header">
+                    <h2>Live Leaderboard (JSON)</h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">Format must be a JSON array
+                        of objects. Keys: rank, avatar, name, college, tClass (badge color class), theme, progress,
+                        score.</p>
+                </div>
+                <div class="form-group">
+                    <textarea id="leaderboardDataJSON" class="form-control"
+                        style="font-family: monospace; height: 300px; font-size: 0.9rem;" spellcheck="false"></textarea>
+                </div>
+            </section>
+
+            <button type="submit" class="btn-update"><i class="fa-solid fa-satellite-dish"
+                    style="margin-right: 10px;"></i> Broadcast Live Updates</button>
+            <button type="button" id="resetDefaults" class="btn-update btn-secondary"><i class="fa-solid fa-rotate-left"
+                    style="margin-right: 10px;"></i> Reset to Defaults</button>
+        </form>
+    </div>
+
+    <!-- Scripts -->
+    <script src="admin.js"></script>
+    <script>
+        // Theme toggle logic (same as main dashboard)
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', newTheme);
+
+                const icon = themeToggleBtn.querySelector('i');
+                if (newTheme === 'light') {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                } else {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

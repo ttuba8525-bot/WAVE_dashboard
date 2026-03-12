@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAVE 3.0 | National Level Hackathon Dashboard</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- Ambient Background Effects -->
+    <div class="ambient-bg ambient-1"></div>
+    <div class="ambient-bg ambient-2"></div>
+    <div class="ambient-bg ambient-3"></div>
+
+    <!-- Light Theme Video Background -->
+    <div class="light-bg-video">
+        <video autoplay loop muted playsinline>
+            <source
+                src="https://assets.mixkit.co/videos/preview/mixkit-set-of-colors-moving-in-a-cylinder-1839-large.mp4"
+                type="video/mp4">
+        </video>
+        <div class="video-overlay"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel">
+            <div class="logo">
+                <h2 style="font-size: 2.5rem; margin-top: 10px;">WAVE <span>3.0</span></h2>
+            </div>
+
+            <div class="event-info-compact">
+                <span class="badge date-badge"><i class="fa-regular fa-calendar"></i> Mar 13-14</span>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#overview" class="nav-item active">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="#themes" class="nav-item">
+                    <i class="fa-solid fa-shapes"></i>
+                    <span>Themes Matrix</span>
+                </a>
+                <a href="#live" class="nav-item">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                    <span>Live Monitoring</span>
+                </a>
+                <a href="#evaluation" class="nav-item">
+                    <i class="fa-solid fa-star-half-stroke"></i>
+                    <span>Evaluation</span>
+                </a>
+                <a href="#leaderboard" class="nav-item">
+                    <i class="fa-solid fa-ranking-star"></i>
+                    <span>Leaderboard</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="countdown-widget glass-panel highlight-border"
+                    style="padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; margin-top: auto; width: 100%;">
+                    <span class="timer-label"
+                        style="display: block; margin-bottom: 8px; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-left: none; padding-left: 0;">Live
+                        Timer</span>
+                    <div class="time-blocks" id="sidebar-countdown-display"
+                        style="font-size: 1.5rem; color: var(--text-main); font-weight: 700; display: flex; justify-content: center; align-items: baseline; gap: 8px; width: 100%;">
+                        <span class="time-unit text-gradient-1">00<small>H</small></span><span
+                            style="color:var(--text-muted); font-size: 1.2rem;">:</span>
+                        <span class="time-unit text-gradient-1">00<small>M</small></span><span
+                            style="color:var(--text-muted); font-size: 1.2rem;">:</span>
+                        <span class="time-unit text-gradient-1">00<small>S</small></span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard Content -->
+        <main class="main-content">
+
+            <!-- Top Header Bar -->
+            <header class="top-bar">
+                <div class="page-title" style="display: flex; align-items: center; gap: 18px;">
+                    <img src="logo.png" alt="BEC Logo"
+                        style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.2);">
+                    <div>
+                        <h2
+                            style="font-size: 1.8rem; margin: 0; color: var(--text-main); font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                            Basaveshwar Engineering College, Bagalkote</h2>
+                        <h1 style="font-size: 0.9rem; margin-top: 4px; color: var(--text-muted); font-weight: 500;">24
+                            Hours National Level Hackathon</h1>
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <div class="status-indicator">
+                        <span class="pulse"></span>
+                        <span style="text-transform: uppercase; letter-spacing: 1px; font-weight: 800;">LIVE</span>
+                    </div>
+
+                    <button class="icon-btn glass-panel" id="theme-toggle" title="Toggle Theme"><i
+                            class="fa-solid fa-sun"></i></button>
+                    <button class="icon-btn glass-panel"><i class="fa-solid fa-user-shield"></i></button>
+                </div>
+            </header>
+
+            <div class="scroll-area">
+
+                <!-- KPI Statistics -->
+                <section id="overview" class="kpi-grid">
+                    <div class="kpi-card glass-panel accent-primary">
+                        <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
+                        <div class="kpi-details">
+                            <h3>Total Students</h3>
+                            <div class="kpi-value" id="val-kpiStudents">556<span class="trend up"><i
+                                        class="fa-solid fa-arrow-up"></i>
+                                    12%</span></div>
+                            <div class="kpi-subtext">Registered across all colleges</div>
+                        </div>
+                        <div class="kpi-bg-icon"><i class="fa-solid fa-users"></i></div>
+                    </div>
+
+                    <div class="kpi-card glass-panel accent-secondary">
+                        <div class="kpi-icon"><i class="fa-solid fa-layer-group"></i></div>
+                        <div class="kpi-details">
+                            <h3>Total Teams</h3>
+                            <div class="kpi-value" id="val-kpiTeams">155<span class="trend up"><i
+                                        class="fa-solid fa-arrow-up"></i>
+                                    5%</span></div>
+                            <div class="kpi-subtext">Verified team formations</div>
+                        </div>
+                        <div class="kpi-bg-icon"><i class="fa-solid fa-layer-group"></i></div>
+                    </div>
+
+                    <div class="kpi-card glass-panel accent-tertiary">
+                        <div class="kpi-icon"><i class="fa-solid fa-trophy"></i></div>
+                        <div class="kpi-details">
+                            <h3>Prize Pool</h3>
+                            <div class="kpi-value" id="val-kpiPrize">₹50,000</div>
+                            <div class="kpi-subtext">Across all categories</div>
+                        </div>
+                        <div class="kpi-bg-icon"><i class="fa-solid fa-trophy"></i></div>
+                    </div>
+
+                </section>
+
+                <!-- Event Timeline Tracker -->
+                <section class="timeline-section glass-panel">
+                    <div class="section-header">
+                        <h2>Event Progress Tracker</h2>
+                        <span class="badge status-badge">Phase 3 Active</span>
+                    </div>
+
+                    <div class="timeline-container">
+                        <div class="timeline-track"></div>
+                        <div class="timeline-nodes">
+                            <div class="node completed">
+                                <div class="node-icon"><i class="fa-solid fa-check"></i></div>
+                                <h4>Inauguration</h4>
+                                <p>Mar 13, 10 AM</p>
+                            </div>
+                            <div class="node active pulse-node">
+                                <div class="node-icon"><i class="fa-solid fa-code"></i></div>
+                                <h4>Hackathon</h4>
+                                <p>Mar 13-14 (12 PM)</p>
+                            </div>
+                            <div class="node">
+                                <div class="node-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                                <h4>Evaluation</h4>
+                                <p>Mar 14 (12 PM)</p>
+                            </div>
+                            <div class="node">
+                                <div class="node-icon"><i class="fa-solid fa-award"></i></div>
+                                <h4>Valedictory</h4>
+                                <p>Mar 14, 1 PM</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Complex Grid Layout for Charts & Data -->
+                <div class="dashboard-grid">
+
+                    <!-- Themes & Problem Statements -->
+                    <section id="themes" class="chart-panel glass-panel tall">
+                        <div class="section-header">
+                            <div>
+                                <h2>Problem Themes</h2>
+                                <p class="sub-header">Team distribution per domain</p>
+                            </div>
+                            <button class="icon-btn small"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                        </div>
+
+                        <div class="theme-highlights">
+                            <div class="highlight-item">
+                                <span class="highlight-label">Most Popular</span>
+                                <span class="highlight-value text-gradient-1">EdTech (33 Teams)</span>
+                            </div>
+                        </div>
+
+                        <div class="chart-wrapper">
+                            <canvas id="themesChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- Live Monitoring Mini-Dashboard -->
+                    <section id="live" class="live-monitoring glass-panel wide">
+                        <div class="section-header">
+                            <div>
+                                <h2>Live Telemetry</h2>
+                                <p class="sub-header">Real-time event metrics</p>
+                            </div>
+                            <span class="live-badge"><span class="dot"></span> LIVE</span>
+                        </div>
+
+                        <div class="metrics-grid">
+                            <div class="metric-box">
+                                <div class="metric-header">
+                                    <i class="fa-solid fa-clipboard-user color-1"></i> Checked-In
+                                </div>
+                                <div class="metric-content">
+                                    <div class="circ-progress"
+                                        style="--val: 92%; --clr: #38bdf8; transform: scale(1.3); margin: 20px;">
+                                        <svg>
+                                            <circle cx="60" cy="60" r="50"></circle>
+                                            <circle cx="60" cy="60" r="50"></circle>
+                                        </svg>
+                                        <span id="val-telemetryCheckedInSpan">145/155</span>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="metric-box">
+                                <div class="metric-header">
+                                    <i class="fa-solid fa-list-check color-4"></i> Judge Reviews
+                                </div>
+                                <div class="metric-content">
+                                    <div class="progress-bar-container">
+                                        <div class="bar-labels"><span>Completed</span><span
+                                                id="val-telemetryReviewsPct">65%</span></div>
+                                        <div class="progress-track">
+                                            <div class="progress-fill" id="val-telemetryReviewsFill"
+                                                style="width: 65%;"></div>
+                                        </div>
+                                        <div class="reviews-count" id="val-telemetryReviewsCount">98 / 155 Teams</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+
+                </div><!-- End Grid 1 -->
+
+                <!-- Middle Content Area -->
+                <div class="content-row">
+
+                    <!-- Evaluation Dashboard -->
+                    <section id="evaluation" class="evaluation-panel glass-panel flex-2">
+                        <div class="section-header">
+                            <div>
+                                <h2>Evaluation Matrix</h2>
+                                <p class="sub-header">Average judging criteria scores</p>
+                            </div>
+                            <div class="filters">
+                                <select class="glass-select" id="phaseFilter">
+                                    <option>Phase 1</option>
+                                    <option>Phase 2</option>
+                                    <option>Phase 3</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="eval-content">
+                            <div class="eval-chart-area">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+
+                            <div class="eval-stats">
+                                <!-- Removed Average Score stat-row -->
+                                <!-- Status removed -->
+
+                                <h4 class="criteria-title" id="criteriaTitle">Phase 1 Evaluation Criteria</h4>
+                                <ul class="criteria-list" id="criteriaList">
+                                    <li><span class="dot c-1"></span> Problem Identification & Relevance</li>
+                                    <li><span class="dot c-2"></span> Clarity of Idea & Solution</li>
+                                    <li><span class="dot c-3"></span> Innovation & Originality</li>
+                                </ul>
+
+                                <div class="schedule-box"
+                                    style="margin-top: 25px; padding: 16px; background: var(--card-inner-bg); border-radius: 12px; border-left: 4px solid var(--accent-1);">
+                                    <h4
+                                        style="font-family: 'Space Grotesk'; font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                        <i class="fa-regular fa-calendar-days"
+                                            style="color: var(--accent-1-light);"></i> Evaluation Schedule
+                                    </h4>
+
+                                    <div
+                                        style="font-size: 0.75rem; color: var(--accent-2-light); font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                        13-03-2026</div>
+                                    <div
+                                        style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.05);">
+                                        <span style="color: var(--text-main); font-weight: 500;">1st Phase</span> <span
+                                            style="color: var(--text-muted);">2 PM - 5 PM</span>
+                                    </div>
+                                    <div
+                                        style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.05);">
+                                        <span style="color: var(--text-main); font-weight: 500;">2nd Phase</span> <span
+                                            style="color: var(--text-muted);">8 PM - 11 PM</span>
+                                    </div>
+
+                                    <div
+                                        style="font-size: 0.75rem; color: var(--accent-2-light); font-weight: 700; margin-top: 14px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                        14-03-2026</div>
+                                    <div
+                                        style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.05);">
+                                        <span style="color: var(--text-main); font-weight: 500;">3rd Phase</span> <span
+                                            style="color: var(--text-muted);">9 AM - 12 Noon</span>
+                                    </div>
+                                    <div
+                                        style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0;">
+                                        <span style="color: var(--text-main); font-weight: 500;">Finalization</span>
+                                        <span style="color: var(--text-muted);">12 Noon - 1 PM</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Winners / Results Section -->
+                    <section class="results-panel glass-panel flex-1">
+                        <div class="section-header center">
+                            <h2 class="glow-text">Final Protocol</h2>
+                        </div>
+
+                        <div class="podium-area hidden" id="resultsPodium">
+                            <div class="podium-spot third-place">
+                                <div class="trophy-icon bronze"><i class="fa-solid fa-award"></i></div>
+                                <h4>Third Place</h4>
+                                <div class="team-name placeholderblur">TBA</div>
+                                <div class="prize">₹10,000</div>
+                            </div>
+
+                            <div class="podium-spot runner-up">
+                                <div class="trophy-icon silver"><i class="fa-solid fa-medal"></i></div>
+                                <h4>Runner Up</h4>
+                                <div class="team-name placeholderblur">TBA</div>
+                                <div class="prize">₹15,000</div>
+                            </div>
+
+                            <div class="podium-spot winner">
+                                <div class="winner-crown"><i class="fa-solid fa-crown"></i></div>
+                                <div class="trophy-icon gold"><i class="fa-solid fa-trophy"></i></div>
+                                <h4>Champion</h4>
+                                <div class="team-name placeholderblur">TBA</div>
+                                <div class="prize">₹25,000</div>
+                            </div>
+                        </div>
+
+                        <div class="results-lock" id="resultsLock">
+                            <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+                            <h3>Results Encrypted</h3>
+                            <p>Unlocks after final evaluation protocol completes.</p>
+                            <button class="btn-primary" onclick="unlockResults()">Override Lock for Demo</button>
+                        </div>
+                    </section>
+
+                </div>
+
+                <!-- Leaderboard Table -->
+                <section id="leaderboard" class="glass-panel table-panel full-width">
+                    <div class="section-header">
+                        <h2>Live Leaderboard</h2>
+                        <div class="search-box glass-panel">
+                            <i class="fa-solid fa-search"></i>
+                            <input type="text" placeholder="Search teams or colleges...">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Team Name</th>
+                                    <th>College / Institution</th>
+                                    <th>Theme</th>
+                                    <th>Progress</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboardBody">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <footer class="dashboard-footer">
+                    <p>WAVE 3.0 Dashboard v1.0 • Designed for Basaveshwar Engineering College</p>
+                </footer>
+
+            </div> <!-- End Scroll Area -->
+        </main>
+    </div>
+
+    <!-- Announcement Modal -->
+    <div id="announcementModal" class="announcement-modal glass-panel">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-bullhorn" style="color: var(--warning); margin-right: 8px;"></i> Live
+                    Announcement</h3>
+                <button class="close-btn" id="closeAnnouncement" title="Dismiss"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p id="announcementText"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+</body>
+
+</html>
