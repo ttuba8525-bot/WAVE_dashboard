@@ -1,6 +1,6 @@
 /**
- * Admin Panel Script for WAVE 3.0 Live Dashboard
- * Handles writing to localStorage to sync data across browser tabs
+ * Admin Panel Script for WAVE 3.0 Live Dashboard using Firebase
+ * Handles writing to Firebase RTDB to sync data across browser tabs
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,23 +27,32 @@ document.addEventListener('DOMContentLoaded', () => {
         announcementMessage: ''
     };
 
-    // Load existing values from localStorage
+    // Load existing values from Firebase (replaces localStorage load)
     function loadSavedData() {
-        for (const key in defaultData) {
-            const el = document.getElementById(key);
-            if (el) {
-                const storedVal = localStorage.getItem(`dashboard:${key}`);
-                if (el.type === 'checkbox') {
-                    el.checked = storedVal === 'true';
-                } else {
-                    el.value = storedVal !== null ? storedVal : defaultData[key];
+        if (typeof database !== 'undefined') {
+            database.ref('dashboard').once('value').then((snapshot) => {
+                const data = snapshot.val() || {};
+                
+                for (const key in defaultData) {
+                    const el = document.getElementById(key);
+                    if (el) {
+                        const storedVal = data[key];
+                        if (el.type === 'checkbox') {
+                            el.checked = storedVal === true || storedVal === 'true';
+                        } else {
+                            el.value = storedVal !== undefined ? storedVal : defaultData[key];
+                        }
+                    }
                 }
-            }
-        }
 
-        const unlocked = localStorage.getItem('dashboard:resultsUnlocked');
-        const cb = document.getElementById('resultsUnlocked');
-        if (cb) cb.checked = unlocked === 'true';
+                const unlocked = data.resultsUnlocked;
+                const cb = document.getElementById('resultsUnlocked');
+                if (cb) cb.checked = unlocked === true || unlocked === 'true';
+            }).catch(error => {
+                console.error("Error loading initial data from Firebase:", error);
+                showNotification('Error loading initial data', 'fa-solid fa-triangle-exclamation', false);
+            });
+        }
     }
 
     loadSavedData();
@@ -93,14 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     }
 
-    // Handle Form Submit (Broadcast)
+    // Handle Form Submit (Broadcast via Firebase)
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-
-        let updatedCount = 0;
-
-        // Save all populated inputs, textareas, and selects to localStorage
-        const elements = form.querySelectorAll('input, textarea, select');
 
         // Validate JSON first if textarea is dirty
         const jsonField = document.getElementById('leaderboardDataJSON');
@@ -115,53 +119,72 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+        
+        let updates = {};
+        const elements = form.querySelectorAll('input, textarea, select');
 
         elements.forEach(el => {
+            if (el.id === 'adminPassword' || el.id === 'showAnnouncement') return; // Handled separately
             if (el.type === 'checkbox') {
-                localStorage.setItem(`dashboard:${el.id}`, el.checked);
-                updatedCount++;
+                updates[el.id] = el.checked;
             } else {
-                localStorage.setItem(`dashboard:${el.id}`, el.value.trim());
-                updatedCount++;
+                updates[el.id] = el.value.trim();
             }
         });
 
-        // Add a timestamp to force the 'storage' event even if values are exactly the same
-        // This ensures the dashboard always catches the "Update" click
-        localStorage.setItem('dashboard:lastUpdate', Date.now());
+        const showAnn = document.getElementById('showAnnouncement');
+        if (showAnn) {
+             updates['showAnnouncement'] = showAnn.checked;
+             if (showAnn.checked) {
+                 updates['announcementTimestamp'] = Date.now().toString();
+             }
+        }
 
-        // Capture exactly when the live timer was pushed so we can calculate countdown
+        // Timer specific checks inside the form submit
         const timerVal = document.getElementById('liveTimer');
         if (timerVal && timerVal.value.trim() !== '') {
-            const newValue = timerVal.value.trim();
-            const oldValue = localStorage.getItem('dashboard:liveTimer');
-
-            if (newValue !== oldValue) {
-                // User typed a new time and hit broadcast. Clear the paused state.
-                localStorage.removeItem('dashboard:timerPausedRemaining');
-                localStorage.setItem('dashboard:timerStartTs', Date.now().toString());
-                localStorage.setItem('dashboard:timerRunning', 'true');
-            } else {
-                // Keep the initial timestamp logic if it was a manual broadcast update of the same time
-                if (!localStorage.getItem('dashboard:timerStartTs')) {
-                    localStorage.setItem('dashboard:timerStartTs', Date.now().toString());
-                }
-            }
-        }
-
-        const showAnn = document.getElementById('showAnnouncement');
-        if (showAnn && showAnn.checked) {
-            localStorage.setItem('dashboard:announcementTimestamp', Date.now().toString());
-        }
-
-        if (updatedCount > 0) {
-            showNotification('Live Dashboard Updated Successfully', 'fa-solid fa-check-circle', true);
+             // In Firebase, we can read the old value first, but a quick broadcast just overwrites it
+             // Let's ensure startTs is initialized if not present (although timer Start button is preferred)
+             database.ref('dashboard/liveTimer').once('value').then((snap) => {
+                  const oldValue = snap.val();
+                  const newValue = timerVal.value.trim();
+                  if (newValue !== oldValue) {
+                        updates['timerPausedRemaining'] = null; // Clear
+                        updates['timerStartTs'] = Date.now().toString();
+                        updates['timerRunning'] = 'true';
+                  }
+                  
+                  updates['lastUpdate'] = Date.now();
+                  
+                  // Push to Firebase
+                  database.ref('dashboard').update(updates).then(() => {
+                      showNotification('Live Dashboard Updated Globally', 'fa-solid fa-check-circle', true);
+                  }).catch(error => {
+                      showNotification('Error updating dashboard: ' + error.message, 'fa-solid fa-circle-exclamation', false);
+                  });
+             });
         } else {
-            showNotification('No values to update', 'fa-solid fa-circle-exclamation', false);
+            updates['lastUpdate'] = Date.now();
+            database.ref('dashboard').update(updates).then(() => {
+                showNotification('Live Dashboard Updated Globally', 'fa-solid fa-check-circle', true);
+            }).catch(error => {
+                showNotification('Error updating dashboard: ' + error.message, 'fa-solid fa-circle-exclamation', false);
+            });
         }
     });
 
-    // --- Timer Controls ---
+    // --- Timer Controls (Firebase adapted) ---
+    // Timer controls need to fetch the current snapshot to do math, then push updates
+    
+    function updateFirebaseTimer(updatesDict, successMsg, errorMsg) {
+        updatesDict['lastUpdate'] = Date.now().toString();
+        database.ref('dashboard').update(updatesDict).then(() => {
+            showNotification(successMsg, 'fa-solid fa-check', true);
+        }).catch(err => {
+            showNotification(errorMsg || 'Database error', 'fa-solid fa-circle-exclamation', false);
+        });
+    }
+
     const btnStart = document.getElementById('btnTimerStart');
     const btnPause = document.getElementById('btnTimerPause');
     const btnReset = document.getElementById('btnTimerReset');
@@ -171,41 +194,38 @@ document.addEventListener('DOMContentLoaded', () => {
         btnStart.addEventListener('click', () => {
             if (timerInput.value.trim() !== '') {
                 const newValue = timerInput.value.trim();
-                const oldValue = localStorage.getItem('dashboard:liveTimer');
+                
+                database.ref('dashboard').once('value').then(snap => {
+                    const data = snap.val() || {};
+                    const oldValue = data.liveTimer;
+                    let pausedRemaining = data.timerPausedRemaining;
+                    
+                    let updates = { liveTimer: newValue, timerRunning: 'true' };
 
-                // If user changed the input text before clicking start, ignore any paused state
-                let pausedRemaining = localStorage.getItem('dashboard:timerPausedRemaining');
-                if (newValue !== oldValue) {
-                    pausedRemaining = null;
-                    localStorage.removeItem('dashboard:timerPausedRemaining');
-                }
+                    if (newValue !== oldValue) {
+                        pausedRemaining = null;
+                        updates['timerPausedRemaining'] = null;
+                    }
 
-                localStorage.setItem('dashboard:liveTimer', newValue);
+                    if (pausedRemaining) {
+                        const parts = timerInput.value.trim().split(':');
+                        const initialH = parseInt(parts[0] || '0', 10);
+                        const initialM = parseInt(parts[1] || '0', 10);
+                        const initialS = parseInt(parts[2] || '0', 10);
+                        const initialTotalSeconds = (initialH * 3600) + (initialM * 60) + initialS;
 
-                // If it's paused, we need to adjust the startTs back relative to now
-                if (pausedRemaining) {
-                    // Timer was paused. Calculate new startTs based on remaining seconds
-                    const parts = timerInput.value.trim().split(':');
-                    const initialH = parseInt(parts[0] || '0', 10);
-                    const initialM = parseInt(parts[1] || '0', 10);
-                    const initialS = parseInt(parts[2] || '0', 10);
-                    const initialTotalSeconds = (initialH * 3600) + (initialM * 60) + initialS;
+                        const currentRemaining = parseInt(pausedRemaining, 10);
+                        const elapsedToNow = initialTotalSeconds - currentRemaining;
 
-                    const currentRemaining = parseInt(pausedRemaining, 10);
-                    const elapsedToNow = initialTotalSeconds - currentRemaining;
+                        const adjustedStartTs = Date.now() - (elapsedToNow * 1000);
+                        updates['timerStartTs'] = adjustedStartTs.toString();
+                        updates['timerPausedRemaining'] = null;
+                    } else {
+                        updates['timerStartTs'] = Date.now().toString();
+                    }
 
-                    // "Backdate" the start timestamp by the elapsed amount
-                    const adjustedStartTs = Date.now() - (elapsedToNow * 1000);
-                    localStorage.setItem('dashboard:timerStartTs', adjustedStartTs.toString());
-                    localStorage.removeItem('dashboard:timerPausedRemaining');
-                } else {
-                    // Fresh start
-                    localStorage.setItem('dashboard:timerStartTs', Date.now().toString());
-                }
-
-                localStorage.setItem('dashboard:timerRunning', 'true');
-                localStorage.setItem('dashboard:lastUpdate', Date.now().toString());
-                showNotification('Timer Started', 'fa-solid fa-play', true);
+                    updateFirebaseTimer(updates, 'Timer Started', 'Failed to start timer');
+                });
             } else {
                 showNotification('Please enter a timer value first', 'fa-solid fa-circle-exclamation', false);
             }
@@ -214,74 +234,84 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnPause) {
         btnPause.addEventListener('click', () => {
-            const isRunning = localStorage.getItem('dashboard:timerRunning') === 'true';
-            if (isRunning) {
-                // To pause perfectly, we need to save the exact "currentSeconds" that script.js calculates
-                // so we can resume from it later.
-                const liveTimer = localStorage.getItem('dashboard:liveTimer');
-                const timerStartTs = localStorage.getItem('dashboard:timerStartTs');
-
-                if (liveTimer && timerStartTs) {
-                    const parts = liveTimer.split(':');
-                    const initialTotalSeconds = (parseInt(parts[0] || '0') * 3600) + (parseInt(parts[1] || '0') * 60) + parseInt(parts[2] || '0');
-                    const elapsedSeconds = Math.floor((Date.now() - parseInt(timerStartTs)) / 1000);
-                    let currentRemaining = initialTotalSeconds - elapsedSeconds;
-                    if (currentRemaining < 0) currentRemaining = 0;
-
-                    localStorage.setItem('dashboard:timerPausedRemaining', currentRemaining.toString());
-                }
-
-                localStorage.setItem('dashboard:timerRunning', 'false');
-                localStorage.setItem('dashboard:lastUpdate', Date.now().toString());
-                showNotification('Timer Paused', 'fa-solid fa-pause', true);
-            }
+             database.ref('dashboard').once('value').then(snap => {
+                 const data = snap.val() || {};
+                 if (data.timerRunning === 'true' || data.timerRunning === true) {
+                     const liveTimer = data.liveTimer;
+                     const timerStartTs = data.timerStartTs;
+                     
+                     let updates = { timerRunning: 'false' };
+                     
+                     if (liveTimer && timerStartTs) {
+                         const parts = liveTimer.split(':');
+                         const initialTotalSeconds = (parseInt(parts[0] || '0') * 3600) + (parseInt(parts[1] || '0') * 60) + parseInt(parts[2] || '0');
+                         const elapsedSeconds = Math.floor((Date.now() - parseInt(timerStartTs)) / 1000);
+                         let currentRemaining = initialTotalSeconds - elapsedSeconds;
+                         if (currentRemaining < 0) currentRemaining = 0;
+                         
+                         updates['timerPausedRemaining'] = currentRemaining.toString();
+                     }
+                     
+                     updateFirebaseTimer(updates, 'Timer Paused', 'Failed to pause timer');
+                 }
+             });
         });
     }
 
     if (btnReset) {
         btnReset.addEventListener('click', () => {
             timerInput.value = '24:00:00';
-            localStorage.setItem('dashboard:liveTimer', '24:00:00');
-            localStorage.setItem('dashboard:timerRunning', 'false');
-            localStorage.removeItem('dashboard:timerStartTs');
-            localStorage.removeItem('dashboard:timerPausedRemaining');
-            localStorage.setItem('dashboard:lastUpdate', Date.now().toString());
-            showNotification('Timer Reset', 'fa-solid fa-rotate-left', true);
+            updateFirebaseTimer({
+                 liveTimer: '24:00:00',
+                 timerRunning: 'false',
+                 timerStartTs: null,
+                 timerPausedRemaining: null
+            }, 'Timer Reset', 'Failed to reset timer');
         });
     }
 
     // Handle Reset defaults
-    resetBtn.addEventListener('click', () => {
-        if (confirm('Are you sure you want to reset all dashboard metrics to their default baseline?')) {
-            for (const key in defaultData) {
-                const el = document.getElementById(key);
-                if (el) {
-                    el.value = defaultData[key];
-                    localStorage.setItem(`dashboard:${key}`, defaultData[key]);
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all dashboard metrics to their default baseline globally?')) {
+                let updates = { ...defaultData, resultsUnlocked: false, lastUpdate: Date.now() };
+                
+                database.ref('dashboard').set(updates).then(() => {
+                    // Update local UI
+                    for (const key in defaultData) {
+                        const el = document.getElementById(key);
+                        if (el) {
+                            if (el.type !== 'checkbox') el.value = defaultData[key];
+                        }
+                    }
+                    const cb = document.getElementById('resultsUnlocked');
+                    if (cb) cb.checked = false;
+                    
+                    showNotification('Metrics Reset to Defaults Globally', 'fa-solid fa-rotate-left', true);
+                }).catch(err => {
+                    showNotification('Failed to reset defaults', 'fa-solid fa-circle-exclamation', false);
+                });
+            }
+        });
+    }
+
+    // Listen for real-time changes from OTHER admins or initial sync dynamically
+    if (typeof database !== 'undefined') {
+        database.ref('dashboard').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Update text inputs that aren't actively being typed in
+                for (const key in data) {
+                    const el = document.getElementById(key);
+                    if (el && document.activeElement !== el) {
+                        if (el.type === 'checkbox') {
+                            el.checked = data[key] === true || data[key] === 'true';
+                        } else {
+                            el.value = data[key];
+                        }
+                    }
                 }
             }
-
-            const cb = document.getElementById('resultsUnlocked');
-            if (cb) {
-                cb.checked = false;
-                localStorage.setItem('dashboard:resultsUnlocked', 'false');
-            }
-
-            localStorage.setItem('dashboard:lastUpdate', Date.now());
-            showNotification('Metrics Reset to Defaults', 'fa-solid fa-rotate-left', true);
-        }
-    });
-
-    // Listen for changes in other admin tabs to keep inputs synced
-    window.addEventListener('storage', (e) => {
-        if (e.key && e.key.startsWith('dashboard:')) {
-            const id = e.key.split(':')[1];
-            if (id !== 'lastUpdate') {
-                const input = document.getElementById(id);
-                if (input && e.newValue !== null) {
-                    input.value = e.newValue;
-                }
-            }
-        }
-    });
+        });
+    }
 });

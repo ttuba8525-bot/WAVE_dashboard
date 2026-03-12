@@ -167,37 +167,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 5000);
     */
 
-    // --- 8. Admin Panel Sync Logic ---
-    function updateFromStorage() {
-        const kpiStudents = localStorage.getItem('dashboard:kpiStudents');
+    // --- 8. Admin Panel Sync Logic (Firebase) ---
+    function updateFromStorage(data) {
+        if (!data) return;
+
+        const kpiStudents = data.kpiStudents;
         if (kpiStudents) {
             const el = document.getElementById('val-kpiStudents');
             if (el) el.innerHTML = `${kpiStudents}<span class="trend up"><i class="fa-solid fa-arrow-up"></i> 12%</span>`;
         }
 
-        const kpiTeams = localStorage.getItem('dashboard:kpiTeams');
+        const kpiTeams = data.kpiTeams;
         if (kpiTeams) {
             const el = document.getElementById('val-kpiTeams');
             if (el) el.innerHTML = `${kpiTeams}<span class="trend up"><i class="fa-solid fa-arrow-up"></i> 5%</span>`;
         }
 
-        const kpiDuration = localStorage.getItem('dashboard:kpiDuration');
+        const kpiDuration = data.kpiDuration;
         if (kpiDuration) {
             const el = document.getElementById('val-kpiDuration');
             if (el) el.innerHTML = `${kpiDuration}<span class="unit">HRS</span>`;
         }
 
-        const kpiPrize = localStorage.getItem('dashboard:kpiPrize');
+        const kpiPrize = data.kpiPrize;
         if (kpiPrize) {
             const el = document.getElementById('val-kpiPrize');
             if (el) el.innerHTML = `₹${kpiPrize}<span class="unit">K</span>`;
         }
 
-        const telemetryCheckedIn = localStorage.getItem('dashboard:telemetryCheckedIn');
+        const telemetryCheckedIn = data.telemetryCheckedIn;
         if (telemetryCheckedIn) {
             const el = document.getElementById('val-telemetryCheckedInSpan');
             if (el) {
-                const max = localStorage.getItem('dashboard:kpiTeams') || 155;
+                const max = data.kpiTeams || 155;
                 el.textContent = `${telemetryCheckedIn}/${max}`;
 
                 const circle = el.closest('.circ-progress');
@@ -208,11 +210,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-
-
-        const telemetryReviews = localStorage.getItem('dashboard:telemetryReviews');
+        const telemetryReviews = data.telemetryReviews;
         if (telemetryReviews) {
-            const max = localStorage.getItem('dashboard:kpiTeams') || 155;
+            const max = data.kpiTeams || 155;
 
             const pctEl = document.getElementById('val-telemetryReviewsPct');
             const fillEl = document.getElementById('val-telemetryReviewsFill');
@@ -226,11 +226,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Timer logic moved to tickTimer()
+        // Timer logic moved to tickTimer(), which still relies on localStorage internally for the tick interval, 
+        // but the source of truth is synced below.
+        
+        // Sync timer state from DB to local for the interval
+        if (data.liveTimer !== undefined) localStorage.setItem('dashboard:liveTimer', data.liveTimer);
+        if (data.timerStartTs !== undefined) localStorage.setItem('dashboard:timerStartTs', data.timerStartTs);
+        if (data.timerRunning !== undefined) localStorage.setItem('dashboard:timerRunning', data.timerRunning);
+        if (data.timerPausedRemaining !== undefined) localStorage.setItem('dashboard:timerPausedRemaining', data.timerPausedRemaining);
+        
         tickTimer();
 
         // Event Timeline Override
-        const eventStage = localStorage.getItem('dashboard:eventStage');
+        const eventStage = data.eventStage;
         if (eventStage) {
             const stageNum = parseFloat(eventStage);
 
@@ -288,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         // Final Protocol (Winners) Override
-        const resultsUnlocked = localStorage.getItem('dashboard:resultsUnlocked') === 'true';
+        const resultsUnlocked = data.resultsUnlocked === 'true' || data.resultsUnlocked === true;
         const lock = document.getElementById('resultsLock');
         const podium = document.getElementById('resultsPodium');
 
@@ -305,27 +313,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const champ = document.querySelector('.podium-spot.winner .team-name');
-        if (champ) champ.textContent = localStorage.getItem('dashboard:winnerChampion') || 'TBA';
+        if (champ) champ.textContent = data.winnerChampion || 'TBA';
 
         const runner = document.querySelector('.podium-spot.runner-up .team-name');
-        if (runner) runner.textContent = localStorage.getItem('dashboard:winnerRunnerUp') || 'TBA';
+        if (runner) runner.textContent = data.winnerRunnerUp || 'TBA';
 
         const third = document.querySelector('.podium-spot.third-place .team-name');
-        if (third) third.textContent = localStorage.getItem('dashboard:winnerThird') || 'TBA';
+        if (third) third.textContent = data.winnerThird || 'TBA';
 
         // Leaderboard Override
-        const lbJSON = localStorage.getItem('dashboard:leaderboardDataJSON');
-        if (lbJSON !== null) {
+        const lbJSON = data.leaderboardDataJSON;
+        if (lbJSON !== undefined && lbJSON !== null) {
             try {
                 // If admin clears the textarea, lbJSON is just an empty string
-                const data = lbJSON.trim() === '' ? [] : JSON.parse(lbJSON);
+                const lb_data = lbJSON.trim() === '' ? [] : JSON.parse(lbJSON);
                 const tbody = document.getElementById('leaderboardBody');
                 if (tbody) {
                     tbody.innerHTML = '';
-                    if (data.length === 0) {
+                    if (lb_data.length === 0) {
                         tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">Leaderboard will be updated during the evaluation phase.</td></tr>`;
                     } else {
-                        data.forEach(team => {
+                        lb_data.forEach(team => {
                             const tr = document.createElement('tr');
                             tr.className = `rank-${team.rank}`;
                             // default fallback values
@@ -362,6 +370,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (e) { console.error('Error parsing leaderboard JSON', e); }
         }
+        
+        // Announcements 
+        if (data.showAnnouncement !== undefined) localStorage.setItem('dashboard:showAnnouncement', data.showAnnouncement);
+        if (data.announcementMessage !== undefined) localStorage.setItem('dashboard:announcementMessage', data.announcementMessage);
+        if (data.announcementTimestamp !== undefined) localStorage.setItem('dashboard:announcementTimestamp', data.announcementTimestamp);
 
         // Broadcast the announcement trigger if the DOM func exists
         if (typeof window.updateAnnouncement === 'function') {
@@ -369,15 +382,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Run on load to pick up previously saved admin changes
-    updateFromStorage();
-
-    // Listen to real-time changes from admin panel tabs
-    window.addEventListener('storage', (e) => {
-        if (e.key && e.key.startsWith('dashboard:')) {
-            updateFromStorage();
-        }
-    });
+    // Run on load to pick up data from Firebase instead of local storage
+    if (typeof database !== 'undefined') {
+        database.ref('dashboard').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                updateFromStorage(data);
+            }
+        });
+    }
 
     // --- 5. Theme Toggle Logic ---
     const themeToggleBtn = document.getElementById('theme-toggle');
