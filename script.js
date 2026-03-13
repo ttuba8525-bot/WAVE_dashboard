@@ -199,12 +199,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (telemetryCheckedIn) {
             const el = document.getElementById('val-telemetryCheckedInSpan');
             if (el) {
-                const max = data.kpiTeams || 155;
+                const max = 155; // Hardcoded max teams
                 el.textContent = `${telemetryCheckedIn}/${max}`;
 
                 const circle = el.closest('.circ-progress');
                 if (circle) {
-                    const pct = Math.min(100, Math.round((parseInt(telemetryCheckedIn) / parseInt(max)) * 100));
+                    const pct = Math.min(100, Math.round((parseInt(telemetryCheckedIn) / max) * 100));
                     circle.style.setProperty('--val', `${pct}%`);
                 }
             }
@@ -212,14 +212,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const telemetryReviews = data.telemetryReviews;
         if (telemetryReviews) {
-            const max = data.kpiTeams || 155;
+            const max = 155; // Hardcoded max teams
 
             const pctEl = document.getElementById('val-telemetryReviewsPct');
             const fillEl = document.getElementById('val-telemetryReviewsFill');
             const countEl = document.getElementById('val-telemetryReviewsCount');
 
             if (pctEl && fillEl && countEl) {
-                const pct = Math.min(100, Math.round((parseInt(telemetryReviews) / parseInt(max)) * 100));
+                const pct = Math.min(100, Math.round((parseInt(telemetryReviews) / max) * 100));
                 pctEl.textContent = `${pct}%`;
                 fillEl.style.width = `${pct}%`;
                 countEl.textContent = `${telemetryReviews} / ${max} Teams`;
