@@ -55,32 +55,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    loadSavedData();
-
     // Admin Auth Logic
     const authOverlay = document.getElementById('authOverlay');
     const loginBtn = document.getElementById('loginBtn');
     const pwdInput = document.getElementById('adminPassword');
     const authError = document.getElementById('authError');
 
-    // Check if already authenticated this session
+    const ADMIN_PASSWORD = "hWv3@bec#26";
+
+    // Check session storage for persistence
     if (sessionStorage.getItem('adminAuthenticated') === 'true') {
         authOverlay.classList.add('hidden');
+        loadSavedData(); // Load data only when authenticated
+    } else {
+        authOverlay.classList.remove('hidden');
     }
 
     function attemptLogin() {
-        if (pwdInput.value === 'hWv3@bec#26') {
-            sessionStorage.setItem('adminAuthenticated', 'true');
-            authOverlay.classList.add('hidden');
+        if (!pwdInput) return;
+        const pwd = pwdInput.value;
+        
+        if (!pwd) {
+            authError.textContent = 'Please enter a password.';
+            authError.style.display = 'block';
+            return;
+        }
+
+        if (pwd === ADMIN_PASSWORD) {
             authError.style.display = 'none';
+            authOverlay.classList.add('hidden');
+            sessionStorage.setItem('adminAuthenticated', 'true');
+            loadSavedData();
         } else {
+            authError.textContent = 'Invalid password. Access denied.';
             authError.style.display = 'block';
             pwdInput.value = '';
         }
     }
 
-    if (loginBtn && pwdInput) {
+    if (loginBtn) {
         loginBtn.addEventListener('click', attemptLogin);
+    }
+    if (pwdInput) {
         pwdInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') attemptLogin();
         });

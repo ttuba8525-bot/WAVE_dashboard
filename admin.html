@@ -169,13 +169,12 @@
     <div id="authOverlay" class="admin-auth-overlay">
         <div class="admin-auth-card">
             <h2><i class="fa-solid fa-lock" style="margin-right: 10px; color: var(--accent-1);"></i>Admin Access</h2>
-            <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.9rem;">Please enter the designated
-                password to access the admin panel.</p>
+            <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.9rem;">Please enter the admin password.</p>
             <input type="password" id="adminPassword" class="form-control" placeholder="Enter Password"
-                autocomplete="off">
+                autocomplete="off" style="margin-bottom: 20px;">
             <button type="button" id="loginBtn" class="btn-primary" style="width: 100%;">Unlock Dashboard</button>
             <p id="authError" style="color: var(--error); margin-top: 15px; font-size: 0.85rem; display: none;">
-                Incorrect password. Access denied.</p>
+                Login failed. Access denied.</p>
         </div>
     </div>
 
