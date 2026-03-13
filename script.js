@@ -437,10 +437,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Run interval locally to keep dashboard timer ticking autonomously
     setInterval(() => {
-        // Only tick the lightweight timer UI if it's running
-        if (localStorage.getItem('dashboard:timerRunning') === 'true') {
-            tickTimer();
-        }
+        // Always tick to update the display, the logic inside handles paused vs running states
+        tickTimer();
     }, 1000);
 
     // --- Theme Toggle Below ---
